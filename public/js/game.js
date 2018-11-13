@@ -25,7 +25,7 @@ function preload() {
     this.load.tilemapTiledJSON('map', 'assets/island.json');
     this.load.spritesheet('link', 'assets/linkfin.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) })
     this.load.spritesheet('otherPlayer', 'assets/linkevil.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) });
-    this.load.spritesheet('bomb', 'assets/bomba.png', { frameWidth: (25), frameHeight: (350/14) });
+    this.load.spritesheet('bomb', 'assets/bomba.png', { frameWidth: (25), frameHeight: (350 / 14) });
 }
 
 var map
@@ -88,15 +88,15 @@ function create() {
         self.otherPlayers.getChildren().forEach(function (otherPlayer) {
             if (playerInfo.playerId === otherPlayer.playerId) {
                 otherPlayer.setPosition(playerInfo.x, playerInfo.y);
-                if  (playerInfo.animation == "right"){
+                if (playerInfo.animation == "right") {
                     otherPlayer.anims.play('rightd', true);
-                }else if (playerInfo.animation == "left"){
+                } else if (playerInfo.animation == "left") {
                     otherPlayer.anims.play('leftd', true);
-                }else if (playerInfo.animation == "up"){
+                } else if (playerInfo.animation == "up") {
                     otherPlayer.anims.play('upd', true);
-                }else if (playerInfo.animation == "down"){
+                } else if (playerInfo.animation == "down") {
                     otherPlayer.anims.play('downd', true);
-                }else if(playerInfo.animation == "stop"){
+                } else if (playerInfo.animation == "stop") {
                     otherPlayer.anims.stop();
                 }
 
@@ -106,14 +106,31 @@ function create() {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     spacekey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
-    
-    this.socket.on('Bomba',function(bomba){
-        bombs.create(bomba.x, bomba.y, 'bomb');
+
+    this.socket.on('Bomba', function (bomba) {
+        var size = 0
         bombs.children.iterate(function (child) {
 
-            child.anims.play('bombmov', true);
+            size += 1
 
         });
+        if (size == 0) {
+            bombs.create(bomba.x, bomba.y, 'bomb');
+            bombs.children.iterate(function (child) {
+
+                child.anims.play('bombmov', true);
+
+            });
+        }
+    });
+
+    this.anims.create({
+        key: 'bombmov',
+        frames: this.anims.generateFrameNumbers('bomb', {
+            start: 0,
+            end: 13
+        }),
+        frameRate: 10,
     });
 
     this.anims.create({
@@ -196,7 +213,7 @@ function create() {
         repeat: -1
     });
 
-    
+
 }
 
 function update() {
@@ -208,17 +225,17 @@ function update() {
         if (this.link.oldPosition && (x !== this.link.oldPosition.x || y !== this.link.oldPosition.y || r !== this.link.oldPosition.rotation)) {
             var ani
 
-            if(x>this.link.oldPosition.x){
-                ani="right"
-            }else if(x<this.link.oldPosition.x){
-                ani="left"
-            }else if(y<this.link.oldPosition.y){
-                ani="up"
-            }else if(y>this.link.oldPosition.y){
-                ani="down"
-            }else{
-                ani="stop"
-            } 
+            if (x > this.link.oldPosition.x) {
+                ani = "right"
+            } else if (x < this.link.oldPosition.x) {
+                ani = "left"
+            } else if (y < this.link.oldPosition.y) {
+                ani = "up"
+            } else if (y > this.link.oldPosition.y) {
+                ani = "down"
+            } else {
+                ani = "stop"
+            }
 
             this.socket.emit('playerMovement', { x: this.link.x, y: this.link.y, rotation: this.link.rotation }, ani);
         }
@@ -227,7 +244,7 @@ function update() {
         this.link.oldPosition = {
             x: this.link.x,
             y: this.link.y,
-            
+
         };
 
 
@@ -273,10 +290,10 @@ function update() {
     }
 
     if (Phaser.Input.Keyboard.JustDown(spacekey)) {
-        this.socket.emit('PonerBomba', { x: this.link.x, y: this.link.y});
-       
-     }
-    
+        this.socket.emit('PonerBomba', { x: this.link.x, y: this.link.y });
+
+    }
+
 
 }
 
@@ -285,15 +302,15 @@ function addPlayer(self, playerInfo) {
     self.link.setCollideWorldBounds(true);
     self.physics.add.collider(self.link, blocks);
     self.physics.add.collider(self.link, softblocks);
-    
-   
+
+
 }
 
 
 function addOtherPlayers(self, playerInfo) {
     const otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'otherPlayer', 24);
-    
-    
+
+
     otherPlayer.playerId = playerInfo.playerId;
     self.otherPlayers.add(otherPlayer);
 }
