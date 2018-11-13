@@ -25,6 +25,7 @@ function preload() {
     this.load.tilemapTiledJSON('map', 'assets/island.json');
     this.load.spritesheet('link', 'assets/linkfin.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) })
     this.load.spritesheet('otherPlayer', 'assets/linkevil.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) });
+    this.load.spritesheet('bomb', 'assets/bomba.png', { frameWidth: (25), frameHeight: (350/14) });
 }
 
 var map
@@ -33,6 +34,8 @@ var aux
 var blocks
 var softblocks
 var mirando = "espera"
+var spacekey
+var bombs
 
 function create() {
 
@@ -51,6 +54,10 @@ function create() {
     blocks.setCollisionBetween(0, 999, true);
     softblocks.setCollisionBetween(0, 999, true);
     //
+
+    bombs = this.add.group();
+    bombs.enableBody = true;
+    bombs.physicsBodyType = Phaser.Physics.ARCADE;
 
     var self = this;
     this.socket = io();
@@ -99,9 +106,15 @@ function create() {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     spacekey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+    
+    this.socket.on('Bomba',function(bomba){
+        bombs.create(bomba.x, bomba.y, 'bomb');
+        bombs.children.iterate(function (child) {
 
-    /* this.physics.add.collider(this.link, blocks);
-    this.physics.add.collider(this.link, softblocks); */
+            child.anims.play('bombmov', true);
+
+        });
+    });
 
     this.anims.create({
         key: 'right',
@@ -256,10 +269,14 @@ function update() {
             mirando = "right";
         }
 
-        this.physics.world.wrap(this.link, 5);
+        this.physics.world.wrap(this.link, 5);//ya se para que es esto
     }
 
-
+    if (Phaser.Input.Keyboard.JustDown(spacekey)) {
+        this.socket.emit('PonerBomba', { x: this.link.x, y: this.link.y});
+       
+     }
+    
 
 }
 
@@ -267,25 +284,15 @@ function addPlayer(self, playerInfo) {
     self.link = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'link', 24);
     self.link.setCollideWorldBounds(true);
     self.physics.add.collider(self.link, blocks);
+    self.physics.add.collider(self.link, softblocks);
     
-    //this.physics.add.collider(self.link, this.blocks);
-
-    /* if (playerInfo.team === 'blue') {
-        self.link.setTint(0x0000ff);
-    } else {
-        self.link.setTint(0xff0000);
-    } */
    
 }
 
 
 function addOtherPlayers(self, playerInfo) {
     const otherPlayer = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'otherPlayer', 24);
-    /* if (playerInfo.team === 'blue') {
-        otherPlayer.setTint(0x0000ff);
-    } else {
-        otherPlayer.setTint(0xff0000);
-    } */
+    
     
     otherPlayer.playerId = playerInfo.playerId;
     self.otherPlayers.add(otherPlayer);
