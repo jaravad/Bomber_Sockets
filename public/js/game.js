@@ -26,6 +26,7 @@ function preload() {
     this.load.spritesheet('link', 'assets/linkfin.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) })
     this.load.spritesheet('otherPlayer', 'assets/linkevil.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) });
     this.load.spritesheet('bomb', 'assets/bomba.png', { frameWidth: (25), frameHeight: (350 / 14) });
+    this.load.spritesheet('explosion', 'assets/explosion.png', { frameWidth: (128), frameHeight: (512 / 4) });
 }
 
 var map
@@ -108,20 +109,7 @@ function create() {
     spacekey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     this.socket.on('Bomba', function (bomba) {
-        var size = 0
-        bombs.children.iterate(function (child) {
-
-            size += 1
-
-        });
-        if (size == 0) {
-            bombs.create(bomba.x, bomba.y, 'bomb');
-            bombs.children.iterate(function (child) {
-
-                child.anims.play('bombmov', true);
-
-            });
-        }
+        createBomb(self, bomba);
     });
 
     this.anims.create({
@@ -213,6 +201,17 @@ function create() {
         repeat: -1
     });
 
+    this.anims.create({
+        key: 'boomexplosion',
+        frames: this.anims.generateFrameNumbers('explosion', {
+            start: 0,
+            end: 15
+        }),
+        frameRate: 10,
+        repeat: -1
+    });
+
+
 
 }
 
@@ -289,7 +288,9 @@ function update() {
         this.physics.world.wrap(this.link, 5);//ya se para que es esto
     }
 
-    if (Phaser.Input.Keyboard.JustDown(spacekey)) {
+    if (spacekey.isDown) {
+        let bombpos ={x: this.link.x, y: this.link.y};
+        
         this.socket.emit('PonerBomba', { x: this.link.x, y: this.link.y });
 
     }
@@ -313,4 +314,29 @@ function addOtherPlayers(self, playerInfo) {
 
     otherPlayer.playerId = playerInfo.playerId;
     self.otherPlayers.add(otherPlayer);
+}
+
+function createBomb(self,bombaobj){
+    this.bomtmp = self.physics.add.sprite(bombaobj.x, bombaobj.y, 'bomb');
+    this.bombs.add(bomtmp);
+    let timer = self.time.delayedCall(2000, explodeBomb, [self, bomtmp], this);
+}
+
+function explodeBomb(self, bomb){
+    this.explosion = self.physics.add.sprite(bomb.x, bomb.y, 'explosion');
+    this.bombs.remove(bomb);
+    bomb.destroy();
+    bomb = null;
+    self.physics.add.overlap(self.link, this.explosion);
+    this.explosion.anims.play("boomexplosion");
+    let timer = self.time.delayedCall(1500, destroyBoom, [this.explosion], this);
+    
+}
+
+function destroyBoom(explosion){
+    explosion.destroy();
+}
+
+function killPlayer(){
+    console.log('moriste')
 }
