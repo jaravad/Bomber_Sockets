@@ -21,26 +21,34 @@ var game = new Phaser.Game(config);
 
 function preload() {
     this.load.image('tileset', 'assets/forest.png');
-    this.load.image('tiletree', 'assets/tree.png');
     this.load.tilemapTiledJSON('map', 'assets/island.json');
     this.load.spritesheet('link', 'assets/linkfin.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) })
     this.load.spritesheet('otherPlayer', 'assets/linkevil.png', { frameWidth: (135 / 8), frameHeight: (101 / 4) });
     this.load.spritesheet('bomb', 'assets/bomba.png', { frameWidth: (25), frameHeight: (350 / 14) });
     this.load.spritesheet('explosion', 'assets/explosion.png', { frameWidth: (128), frameHeight: (512 / 4) });
+    this.load.audio('explosionsound','assets/explosion.mp3');
+    this.load.audio('put-bomb','assets/put-bomb.wav');
+    this.load.audio('song','assets/gameSong.mp3');
+
 }
 
 var map
 var layer
 var aux
 var blocks
-var softblocks
 var mirando = "espera"
 var spacekey
 var bombs
 
+
 function create() {
 
     //mapa:
+
+    var music = this.sound.add('song');
+    music.play();
+    
+    
     map = this.add.tilemap('map', 35, 35);
 
     aux = map.addTilesetImage('forest', 'tileset');
@@ -49,12 +57,9 @@ function create() {
     blocks = map.createStaticLayer('blocks', aux);
 
     layer.debug = true;
-    aux = map.addTilesetImage('tree', 'tiletree');
-    softblocks = map.createStaticLayer('softblocks', aux);
+
 
     blocks.setCollisionBetween(0, 999, true);
-    softblocks.setCollisionBetween(0, 999, true);
-    //
 
     bombs = this.add.group();
     bombs.enableBody = true;
@@ -289,8 +294,8 @@ function update() {
     }
 
     if (spacekey.isDown) {
-        let bombpos ={x: this.link.x, y: this.link.y};
-        
+        let bombpos = { x: this.link.x, y: this.link.y };
+
         this.socket.emit('PonerBomba', { x: this.link.x, y: this.link.y });
 
     }
@@ -302,7 +307,7 @@ function addPlayer(self, playerInfo) {
     self.link = self.physics.add.sprite(playerInfo.x, playerInfo.y, 'link', 24);
     self.link.setCollideWorldBounds(true);
     self.physics.add.collider(self.link, blocks);
-    self.physics.add.collider(self.link, softblocks);
+
 
 
 }
@@ -315,28 +320,42 @@ function addOtherPlayers(self, playerInfo) {
     otherPlayer.playerId = playerInfo.playerId;
     self.otherPlayers.add(otherPlayer);
 }
-
-function createBomb(self,bombaobj){
-    this.bomtmp = self.physics.add.sprite(bombaobj.x, bombaobj.y, 'bomb');
-    this.bombs.add(bomtmp);
-    let timer = self.time.delayedCall(2000, explodeBomb, [self, bomtmp], this);
+var putbomb;
+function createBomb(self, bombaobj) {
+    var size=0
+    bombs.children.iterate(function (child) {
+        size+=1;
+    });
+    if (size==0) {
+        this.bomtmp = self.physics.add.sprite(bombaobj.x, bombaobj.y, 'bomb');
+        this.bombs.add(bomtmp);
+        var bombsound=self.sound.add('put-bomb');
+        boooom=self.sound.add('explosionsound');
+        bombsound.play();
+        //this.putbomb = self.add.audio('put-bomb');
+        let timer = self.time.delayedCall(2000, explodeBomb, [self, bomtmp], this);
+    }
 }
 
-function explodeBomb(self, bomb){
+function explodeBomb(self, bomb) {
     this.explosion = self.physics.add.sprite(bomb.x, bomb.y, 'explosion');
     this.bombs.remove(bomb);
     bomb.destroy();
     bomb = null;
-    self.physics.add.overlap(self.link, this.explosion);
+    self.physics.add.overlap(self.link, this.explosion,killPlayer(self.link),null,this);
     this.explosion.anims.play("boomexplosion");
+    boooom.play();
     let timer = self.time.delayedCall(1500, destroyBoom, [this.explosion], this);
+
+}
+var boooom
+function destroyBoom(explosion) {
+    
+    explosion.destroy();
     
 }
 
-function destroyBoom(explosion){
-    explosion.destroy();
-}
-
-function killPlayer(){
+function killPlayer(link) {
     console.log('moriste')
+    
 }
