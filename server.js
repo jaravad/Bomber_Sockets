@@ -25,8 +25,8 @@ io.on('connection', function (socket) {
     cont += 1;
   } else if (cont == 1) {
     players[socket.id] = {
-      x: (13 * 35) + (35 / 2),
-      y: (13 * 35) + (35 / 2),
+      x: (23 * 35) + (35 / 2),
+      y: (15 * 35) + (35 / 2),
       playerId: socket.id,
       animation: null,
       bombCount: 0
@@ -41,7 +41,11 @@ io.on('connection', function (socket) {
   socket.broadcast.emit('newPlayer', players[socket.id]);
 
   socket.on('PonerBomba', function (movementBomb) {
-    io.sockets.emit('Bomba', movementBomb)//donde esta esta Bomba
+    io.sockets.emit('Bomba', movementBomb)
+  });
+
+  socket.on('EmitirGameO', function (movementBomb) {
+    io.sockets.emit('Showgameover')
   });
 
 
@@ -64,7 +68,7 @@ io.on('connection', function (socket) {
   });
 });
 
-server.listen(8080, function () {
+server.listen(8081, function () {
   console.log(`Listening on ${server.address().port}`);
 });
 

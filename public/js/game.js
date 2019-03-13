@@ -1,8 +1,8 @@
 var config = {
     type: Phaser.AUTO,
     parent: 'phaser-example',
-    width: 15 * 35,
-    height: 15 * 35,
+    width: 25 * 35,
+    height: 17 * 35,
     physics: {
         default: 'arcade',
         arcade: {
@@ -29,6 +29,8 @@ function preload() {
     this.load.audio('explosionsound','assets/explosion.mp3');
     this.load.audio('put-bomb','assets/put-bomb.wav');
     this.load.audio('song','assets/gameSong.mp3');
+    this.load.image('gameover','assets/gover.png');
+    this.load.audio('sadsong','assets/sadsong.mp3');
 
 }
 
@@ -39,13 +41,14 @@ var blocks
 var mirando = "espera"
 var spacekey
 var bombs
-
+var music
 
 function create() {
 
     //mapa:
+    this.constBombs = 0
 
-    var music = this.sound.add('song');
+    music = this.sound.add('song');
     music.play();
     
     
@@ -114,7 +117,19 @@ function create() {
     spacekey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
 
     this.socket.on('Bomba', function (bomba) {
-        createBomb(self, bomba);
+        if(self.constBombs<10){
+
+            createBomb(self, bomba);
+        }else{
+            killPlayer();
+        }
+    });
+
+    this.socket.on('Showgameover',function(GOver){
+        self.add.sprite(0,0, 'gameover').setOrigin(0,0);
+        music.pause();
+        var ssong=self.sound.add('sadsong');
+        ssong.play();
     });
 
     this.anims.create({
@@ -331,6 +346,7 @@ function createBomb(self, bombaobj) {
         this.bombs.add(bomtmp);
         var bombsound=self.sound.add('put-bomb');
         boooom=self.sound.add('explosionsound');
+        self.constBombs+=1;
         bombsound.play();
         //this.putbomb = self.add.audio('put-bomb');
         let timer = self.time.delayedCall(2000, explodeBomb, [self, bomtmp], this);
@@ -342,7 +358,7 @@ function explodeBomb(self, bomb) {
     this.bombs.remove(bomb);
     bomb.destroy();
     bomb = null;
-    self.physics.add.overlap(self.link, this.explosion,killPlayer(self.link),null,this);
+    self.physics.add.overlap(self.link, this.explosion,killPlayer,null,self);
     this.explosion.anims.play("boomexplosion");
     boooom.play();
     let timer = self.time.delayedCall(1500, destroyBoom, [this.explosion], this);
@@ -355,7 +371,11 @@ function destroyBoom(explosion) {
     
 }
 
-function killPlayer(link) {
-    console.log('moriste')
-    
+function killPlayer() {
+    this.socket.emit('EmitirGameO');
+    this.add.sprite(0,0, 'gameover').setOrigin(0,0);
+    music.pause();
+    var ssong=this.sound.add('sadsong');
+    ssong.play();
+
 }
