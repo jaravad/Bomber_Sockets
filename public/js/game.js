@@ -30,7 +30,6 @@ function preload() {
     this.load.audio('put-bomb','assets/put-bomb.wav');
     this.load.audio('song','assets/gameSong.mp3');
     this.load.image('gameover','assets/gover.png');
-    this.load.audio('sadsong','assets/sadsong.mp3');
 
 }
 
@@ -375,7 +374,6 @@ function killPlayer() {
     this.socket.emit('EmitirGameO');
     this.add.sprite(0,0, 'gameover').setOrigin(0,0);
     music.pause();
-    var ssong=this.sound.add('sadsong');
-    ssong.play();
+    
 
 }
